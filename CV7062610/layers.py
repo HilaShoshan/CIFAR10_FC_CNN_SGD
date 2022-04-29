@@ -2,7 +2,6 @@ from builtins import range
 import numpy as np
 
 
-
 def affine_forward(x, w, b):
     """
     Computes the forward pass for an affine (fully-connected) layer.
@@ -28,7 +27,14 @@ def affine_forward(x, w, b):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    dimensions = x.shape  # returns a tuple (N, d_1, ..., d_k)
+    N = dimensions[0]
+    D = 1  # this will be d_1 * ... * d_k
+    for i in range(1, len(dimensions)):  # starting in the second element
+        D *= dimensions[i]
+    # x = np.reshape(x, (N, D))
+
+    out = np.dot(np.reshape(x, (N, D)), w) + b  # x stays in shape of (N, d_1, ..., d_k)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -61,7 +67,18 @@ def affine_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    dimensions = x.shape  # returns a tuple (N, d_1, ..., d_k)
+    N = dimensions[0]
+    D = 1  # this will be d_1 * ... * d_k
+    for i in range(1, len(dimensions)):  # starting in the second element
+        D *= dimensions[i]
+
+    dx = np.dot(dout, w.T)
+    dx = np.reshape(dx, dimensions)  # return the shape to (N, d_1, ..., d_k)
+
+    dw = np.dot(np.reshape(x, (N, D)).T, dout)
+
+    db = np.sum(dout, axis=0)  # sum the elements in each column in dout matrix
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -87,7 +104,13 @@ def relu_forward(x):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    out = []
+    for num in np.nditer(x):
+      if num < 0:
+        out.append(0)
+      else:
+        out.append(num)
+    out = np.reshape(out, x.shape)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
