@@ -55,7 +55,13 @@ class TwoLayerNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        # Each neuron in the previous layer is connected by an edge to all the neurons 
+        # in the next layer. Each edge has a weight that multiply by the neuron value
+        # to get the value of the neuron on the next layer.
+        self.params['W1'] = np.random.normal(0.0, weight_scale, (input_dim, hidden_dim))
+        self.params['b1'] = np.zeros(hidden_dim)
+        self.params['W2'] = np.random.normal(0.0, weight_scale, (hidden_dim, num_classes))
+        self.params['b2'] = np.zeros(num_classes)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -92,8 +98,10 @@ class TwoLayerNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
-
+        # forward pass
+        out1, cache1 = affine_relu_forward(X, W1, b1)
+        scores, cache2 = affine_forward(out1, W2, b2)
+        
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
         #                             END OF YOUR CODE                             #
@@ -116,7 +124,20 @@ class TwoLayerNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        loss, dout = softmax_loss(scores, y)
+
+        # L2 regularization
+        loss += 0.5 * self.reg * np.sum(W1*W1)  
+        loss += 0.5 * self.reg * np.sum(W2*W2)  
+        
+        # backward pass
+        dx2, dw2, db2 = affine_backward(dout, cache2)
+        dx1, dw1, db1 = affine_relu_backward(dx2, cache1)
+
+        grads['W1'] = dw1 + self.reg * W1
+        grads['b1'] = db1
+        grads['W2'] = dw2 + self.reg * W2
+        grads['b2'] = db2
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################

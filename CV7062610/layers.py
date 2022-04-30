@@ -137,8 +137,15 @@ def relu_backward(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    dx = []
+    for i, j in np.nditer([x, dout]):
+      if i < 0:
+        dx.append(0)
+      else:
+        dx.append(j)
+    dx = np.reshape(dx, x.shape)
 
+    ######################
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
     #                             END OF YOUR CODE                            #
