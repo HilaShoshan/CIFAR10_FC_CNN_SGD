@@ -109,17 +109,18 @@ class ThreeLayerConvNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
+        N, C, H, W = X.shape
+        F = W1.shape[0]
+
         # first (convolutional) layer - forward pass
         out1, cache1 = conv_relu_pool_forward(X, W1, b1, conv_param, pool_param)
-        out1 = np.reshape(out1, (out1.shape[0], -1))
+        out1 = np.reshape(out1, (N, W2.shape[0]))  # an input to the affine hidden layer
 
         # hidden (affine) layer - forward pass
         out2, cache2 = affine_relu_forward(out1, W2, b2)
 
         # output (affine) layer - forward pass
-        out3, cache3 = affine_forward(out2, W3, b3)
-
-        scores = out3
+        scores, cache3 = affine_forward(out2, W3, b3)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -143,23 +144,25 @@ class ThreeLayerConvNet(object):
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
         loss, dx = softmax_loss(scores, y)
+        reg_weights = np.sum(np.square(W1)) + np.sum(np.square(W2)) + np.sum(np.square(W3))
+        loss += 0.5 * self.reg * reg_weights  # regularization
 
         # output (affine) layer - backward pass
-        dout2, grads["W3"], grads["b3"] = affine_backward(dx, cache3)
+        dx3, dw3, db3 = affine_backward(dx, cache3)
 
         # hidden (affine) layer - backward pass
-        dout1, grads["W2"], grads["b2"] = affine_relu_backward(dout2, cache2)
-        dout1 = np.reshape(dout1, out1.shape)
+        dx2, dw2, db2 = affine_relu_backward(dx3, cache2)
+        dx2 = dx2.reshape(N, F, H//2, W//2)
 
-        # first (convolutional) layer - backward pass
-        dout0 , grads["W1"], grads["b1"] = conv_relu_pool_backward(dout1, cache1)
+        # first (convolutional) layer - backward pass 
+        dx1, dw1, db1 = conv_relu_pool_backward(dx2, cache1)
 
-        # regularization
-        for idx in range(1,4):
-            w = "W%d" % idx
-            if self.reg > 0:
-                loss += 0.5 * self.reg * (self.params[w] ** 2).sum()
-                grads[w] += self.reg * self.params[w]
+        grads['W1'] = self.reg * np.sum(W1) + dw1
+        grads['b1'] = db1
+        grads['W2'] = self.reg * np.sum(W2) + dw2
+        grads['b2'] = db2
+        grads['W3'] = self.reg * np.sum(W3) + dw3
+        grads['b3'] = db3
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
