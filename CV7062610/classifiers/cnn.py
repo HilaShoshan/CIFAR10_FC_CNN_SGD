@@ -9,9 +9,7 @@ from CV7062610.layer_utils import *
 class ThreeLayerConvNet(object):
     """
     A three-layer convolutional network with the following architecture:
-
     conv - relu - 2x2 max pool - affine - relu - affine - softmax
-
     The network operates on minibatches of data that have shape (N, C, H, W)
     consisting of N images, each with height H and width W and with C input
     channels.
@@ -30,7 +28,6 @@ class ThreeLayerConvNet(object):
     ):
         """
         Initialize a new network.
-
         Inputs:
         - input_dim: Tuple (C, H, W) giving size of input data
         - num_filters: Number of filters to use in the convolutional layer
@@ -87,7 +84,6 @@ class ThreeLayerConvNet(object):
     def loss(self, X, y=None):
         """
         Evaluate loss and gradient for the three-layer convolutional network.
-
         Input / output: Same API as TwoLayerNet in fc_net.py.
         """
         W1, b1 = self.params["W1"], self.params["b1"]
@@ -148,7 +144,7 @@ class ThreeLayerConvNet(object):
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
         loss, dx = softmax_loss(scores, y)
-        reg_weights = np.sum(W1**2) + np.sum(W2**2) + np.sum(W3**2)
+        reg_weights = np.sum(np.square(W1)) + np.sum(np.square(W2)) + np.sum(np.square(W3))
         loss += 0.5 * self.reg * reg_weights  # regularization
 
         # output (affine) layer - backward pass
