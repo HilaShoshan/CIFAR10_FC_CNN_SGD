@@ -63,7 +63,18 @@ class ThreeLayerConvNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        # first (convolutional) Layer
+        self.params['W1'] = np.random.normal(0.0, weight_scale, (num_filters, input_dim[0], filter_size, filter_size))
+        self.params['b1'] = np.zeros(num_filters)
+        
+        # hidden (affine) layer
+        rows = num_filters * input_dim[1]//2 * input_dim[2]//2
+        self.params['W2'] = np.random.normal(0.0, weight_scale, (rows, hidden_dim))
+        self.params['b2'] = np.zeros(hidden_dim)
+        
+        # output (affine) layer
+        self.params['W3'] = np.random.normal(0.0, weight_scale, (hidden_dim, num_classes))
+        self.params['b3'] = np.zeros(num_classes)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -102,7 +113,18 @@ class ThreeLayerConvNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        N, C, H, W = X.shape
+        F = W1.shape[0]
+
+        # first (convolutional) layer - forward pass
+        out1, cache1 = conv_relu_pool_forward(X, W1, b1, conv_param, pool_param)
+        out1 = np.reshape(out1, (N, W2.shape[0]))  # an input to the affine hidden layer
+
+        # hidden (affine) layer - forward pass
+        out2, cache2 = affine_relu_forward(out1, W2, b2)
+
+        # output (affine) layer - forward pass
+        scores, cache3 = affine_forward(out2, W3, b3)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -125,7 +147,26 @@ class ThreeLayerConvNet(object):
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-        pass
+        loss, dx = softmax_loss(scores, y)
+        reg_weights = np.sum(W1**2) + np.sum(W2**2) + np.sum(W3**2)
+        loss += 0.5 * self.reg * reg_weights  # regularization
+
+        # output (affine) layer - backward pass
+        dx3, dw3, db3 = affine_backward(dx, cache3)
+
+        # hidden (affine) layer - backward pass
+        dx2, dw2, db2 = affine_relu_backward(dx3, cache2)
+        dx2 = dx2.reshape(N, F, H//2, W//2)
+
+        # first (convolutional) layer - backward pass 
+        dx1, dw1, db1 = conv_relu_pool_backward(dx2, cache1)
+
+        grads['W1'] = self.reg * np.sum(W1) + dw1
+        grads['b1'] = db1
+        grads['W2'] = self.reg * np.sum(W2) + dw2
+        grads['b2'] = db2
+        grads['W3'] = self.reg * np.sum(W3) + dw3
+        grads['b3'] = db3
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
