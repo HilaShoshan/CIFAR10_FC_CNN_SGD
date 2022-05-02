@@ -188,7 +188,34 @@ def conv_forward_naive(x, w, b, conv_param):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    # padding each cannel at each image input
+    pad = conv_param['pad']
+    x_pad = np.pad(x, [(0,0), (0,0), (pad, pad), (pad, pad)])
+
+    stride = conv_param['stride']  
+    N, C, H, W = x.shape
+    F, C, HH, WW = w.shape  
+
+    # reshape w into a 2 dimentional array 
+    # such that it will be easier to do convolution with "dot"
+    kernel = np.reshape(w, (F, C * HH * WW)).T  
+    
+    # define output
+    H_tag = int(1 + (H + 2 * pad - HH) / stride)
+    W_tag = int(1 + (W + 2 * pad - WW) / stride)
+    out = np.zeros((N, F, H_tag, W_tag))
+    
+    # do convolution
+    for i in range(H_tag):  # output row
+      from_row = i * stride
+      to_row = from_row + HH
+      for j in range(W_tag):  # output column
+        from_col = j * stride
+        to_col = from_col + WW
+        x_part = x_pad[:, :, from_row:to_row, from_col:to_col]
+        x_part = np.reshape(x_part, (N, C * HH * WW))
+        x_conv = x_part.dot(kernel) + b
+        out[:, :, i, j] = x_conv
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
@@ -217,7 +244,35 @@ def conv_backward_naive(dout, cache):
     ###########################################################################
     # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
 
-    pass
+    x_pad, w, b, conv_param = cache 
+
+    pad = conv_param['pad']
+    stride = conv_param['stride']
+    N, C, H, W = (x_pad.shape[0], x_pad.shape[1], x_pad.shape[2]-2*pad, x_pad.shape[3]-2*pad)
+    F, C, HH, WW = w.shape
+    H_tag = int(1 + (H + 2 * pad - HH) / stride)
+    W_tag = int(1 + (W + 2 * pad - WW) / stride)
+
+    kernel = np.reshape(w, (F, C * HH * WW))
+    dkernel = np.zeros((F, C * HH * WW))
+
+    dout_pad = np.zeros((N, C, H+2*pad, W+2*pad))
+
+    for i in range(H_tag):
+      from_row = i * stride
+      to_row = from_row + HH
+      for j in range(W_tag):
+        dout_part = dout[:, :, i, j]
+        from_col = j * stride
+        to_col = from_col + WW
+        dout_conv = np.dot(dout_part, kernel).reshape(N, C, HH, WW)
+        dout_pad[:, :, from_row:to_row, from_col:to_col] += dout_conv
+        x_conv = x_pad[:, :, from_row:to_row, from_col:to_col].reshape(N, C * HH * WW)
+        dkernel += dout_part.T.dot(x_conv)
+
+    dx = dout_pad[:, :, pad:-pad, pad:-pad]
+    dw = np.reshape(dkernel, (F, C, HH, WW))
+    db = np.sum(dout, axis=(0, 2, 3))  # dout.shape = (N, F, HH, WW)
 
     # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
     ###########################################################################
