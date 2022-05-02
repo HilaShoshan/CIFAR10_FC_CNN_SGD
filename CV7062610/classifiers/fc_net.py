@@ -225,12 +225,21 @@ class FullyConnectedNet(object):
             self.params['beta1'] = np.zeros(hidden_dims[0])
 
         # iterate over the hidden layers
-        for i in range(len(hidden_dims)):
+        for i in range(len(hidden_dims)-1):
             self.params['W' + str(i+2)] = np.random.normal(0.0, weight_scale, (hidden_dims[i], hidden_dims[i+1]))
             self.params['b' + str(i+2)] = np.zeros(hidden_dims[i+1])
             if self.normalization:  # using batch normalization
                 self.params['gamma' + str(i+2)] = np.ones(hidden_dims[i+1])
                 self.params['beta' + str(i+2)] = np.zeros(hidden_dims[i+1])
+
+        # the last layer (output layer)
+        self.params['W' + str(self.num_layers)] = np.random.normal(0.0, 
+                                                                  weight_scale, 
+                                                                  (hidden_dims[-1], num_classes))
+        self.params['b' + str(self.num_layers)] = np.zeros(num_classes)
+        if self.normalization:  # using batch normalization
+            self.params['gamma' + str(self.num_layers)] = np.ones(num_classes)
+            self.params['beta' + str(self.num_layers)] = np.zeros(num_classes)
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
@@ -344,32 +353,33 @@ class FullyConnectedNet(object):
         # of 0.5 to simplify the expression for the gradient.                      #
         ############################################################################
         # *****START OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
+        
+        back_layers = {}
 
-        dlayer = {}
-        dW = {}
-        db = {}
+        loss, dout = softmax_loss(scores, y) 
+        back_layers[self.num_layers] = dout
+
+        # save the weights and biases to pass it to the previous layer during backpropagation
+        Ws = {}
+        bs = {}
+        
         reg_loss = {}
         reg_grad = {}
-        softmax_l, dsoftmax = softmax_loss(scores,y)
-        loss += softmax_l
-        dlayer[self.num_layers] = dsoftmax
-        for i in range(self.num_layers, -1, -1):
-            if i == 0:
-                layers[i] = X
-                continue
-            Wi_key = 'W' + str(i)
-            bi_key = 'b' + str(i)
-            W = self.params[Wi_key]
-            reg_loss[Wi_key]=self.reg * 0.5 * np.sum(W*W)
-            reg_grad[Wi_key]=self.reg*W
-            loss+= reg_loss[Wi_key]
-            if (i < self.num_layers):
-                dlayer[i], dW[i], db[i] = affine_relu_backward(dlayer[i+1], caches[i])
-            else:
-                dlayer[i], dW[i], db[i] = affine_backward(dsoftmax, caches[i])
 
-            grads[Wi_key] = reg_grad[Wi_key] + dW[i]
-            grads[bi_key] = db[i]
+        for i in reversed(range(self.num_layers+1)):  # run backward - from the last layer towards the first 
+            if i > 0:  # hidden layers or last layer
+                W = self.params['W'+str(i)]
+                reg_loss['W'+str(i)] = 0.5 * self.reg * np.sum(W*W)
+                reg_grad['W'+str(i)] = self.reg * W
+                loss += reg_loss['W'+str(i)]
+                if i == self.num_layers:  # last layer
+                    back_layers[i], Ws[i], bs[i] = affine_backward(dout, caches[i])
+                else:
+                    back_layers[i], Ws[i], bs[i] = affine_relu_backward(back_layers[i+1], caches[i])
+                grads['W'+str(i)] = reg_grad['W'+str(i)] + Ws[i]
+                grads['b'+str(i)] = bs[i]
+            else:  # i == 0, first layer
+                layers[0] = X
 
         # *****END OF YOUR CODE (DO NOT DELETE/MODIFY THIS LINE)*****
         ############################################################################
